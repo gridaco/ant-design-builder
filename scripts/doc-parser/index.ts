@@ -1,7 +1,8 @@
 import { request } from "@octokit/request"
 import * as minimatch from "minimatch"
 import * as dotenv from "dotenv"
-import { parseExampleSnippet } from "./example-parser";
+import { ComponentUsageExample, parseExampleSnippet } from "./example-parser";
+import * as fs from "fs"
 
 // set envs for authentication
 dotenv.config()
@@ -31,13 +32,13 @@ interface AntComponentIterationMap {
     index: string
     doc: string
     examplesUrl: string[]
-    examples: string[]
+    examples: ComponentUsageExample[]
 }
 
 async function makeComponentIterationMap(componentName: string, componentTree: Tree[]): Promise<AntComponentIterationMap> {
     const demo = componentTree.find(t => t.path == EXAMPLES_DIR)
     let demoUrls: string[] = []
-    let demos: string[] = []
+    let examples: ComponentUsageExample[] = []
     // for some components, there are no demo directories, and no examples.
     if (demo) {
         demoUrls = (await (await requestWithAuth(demo.url)).data.tree as Tree[]).map(t => t.url)
@@ -45,8 +46,8 @@ async function makeComponentIterationMap(componentName: string, componentTree: T
             const file: Blob = (await requestWithAuth(du)).data
             let buff = Buffer.from(file.content, file.encoding);
             let mdtext = buff.toString('ascii');
-            const snippet = parseExampleSnippet('notitle', mdtext)
-            demos.push(snippet)
+            const example = parseExampleSnippet(du, mdtext)
+            examples.push(example)
         }
     }
 
@@ -56,7 +57,7 @@ async function makeComponentIterationMap(componentName: string, componentTree: T
         index: `https://github.com/ant-design/ant-design/blob/master/components/${componentName}/index.tsx`,
         doc: `https://ant.design/components/${componentName}`,
         examplesUrl: demoUrls,
-        examples: demos
+        examples: examples
     }
 }
 
@@ -102,6 +103,7 @@ interface Blob {
 
 
 async function main() {
+    const results = []
     // components
     const d = await requestWithAuth("GET /repos/{owner}/{repo}/git/trees/{sha}", {
         owner: "ant-design",
@@ -112,15 +114,24 @@ async function main() {
 
     const componentDirs = tree.filter((t) => t.type == "tree" && testDirName(t.path))
 
-    componentDirs.forEach(async (c) => {
+    for (const c of componentDirs) {
         const componentName = c.path
+        console.log(`processing`, componentName)
         try {
             const d = await requestWithAuth(c.url)
             const componentTree: Tree[] = d.data.tree
             const res = await makeComponentIterationMap(componentName, componentTree)
-            // console.log(res)
+            results.push(res)
         } catch (e) {
             console.error('failed to make iteration map for component', componentName)
+        }
+    }
+
+    fs.appendFile('components.manifest.json', JSON.stringify(results, null, 2), (err) => {
+        if (err) {
+            console.error(`error while writing components.manifest.json`, err)
+        } else {
+            console.log(`done. output - components.manifest.json`)
         }
     })
 }
