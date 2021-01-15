@@ -1,4 +1,3 @@
-import Axios from "axios";
 import { request } from "@octokit/request"
 import * as minimatch from "minimatch"
 import * as dotenv from "dotenv"
