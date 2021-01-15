@@ -1,6 +1,7 @@
 import { request } from "@octokit/request"
 import * as minimatch from "minimatch"
 import * as dotenv from "dotenv"
+import { parseExampleSnippet } from "./example-parser";
 
 // set envs for authentication
 dotenv.config()
@@ -12,7 +13,7 @@ dotenv.config()
  */
 const requestWithAuth = request.defaults({
     headers: {
-        authorization: `token ${process.env.GITHUB_ACCESS_TOKEN}`,
+        authorization: process.env?.GITHUB_ACCESS_TOKEN && `token ${process.env.GITHUB_ACCESS_TOKEN}`,
     },
 });
 
@@ -43,8 +44,9 @@ async function makeComponentIterationMap(componentName: string, componentTree: T
         for (const du of demoUrls) {
             const file: Blob = (await requestWithAuth(du)).data
             let buff = Buffer.from(file.content, file.encoding);
-            let text = buff.toString('ascii');
-            demos.push(text)
+            let mdtext = buff.toString('ascii');
+            const snippet = parseExampleSnippet('notitle', mdtext)
+            demos.push(snippet)
         }
     }
 
@@ -116,7 +118,7 @@ async function main() {
             const d = await requestWithAuth(c.url)
             const componentTree: Tree[] = d.data.tree
             const res = await makeComponentIterationMap(componentName, componentTree)
-            console.log(res)
+            // console.log(res)
         } catch (e) {
             console.error('failed to make iteration map for component', componentName)
         }
