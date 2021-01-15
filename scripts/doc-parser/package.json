@@ -1,0 +1,28 @@
+{
+    "name": "antd-doc-parser",
+    "version": "0.0.1",
+    "repository": "https://github.com/bridgedxyz/ant-design-builder",
+    "author": "bridged.xyz authors",
+    "license": "MIT",
+    "private": false,
+    "main": "index.js",
+    "dependencies": {
+        "@octokit/request": "^5.4.12",
+        "axios": "^0.21.0",
+        "coli": "^0.0.1",
+        "dotenv": "^8.2.0",
+        "marked": "^1.2.7",
+        "minimatch": "^3.0.4",
+        "xmldom": "^0.4.0",
+        "xpath": "^0.0.32"
+    },
+    "devDependencies": {
+        "@types/node": "^14.14.21",
+        "typescript": "^4.0.5"
+    },
+    "files": [
+        "dist",
+        "README.md",
+        "LICENSE"
+    ]
+}
